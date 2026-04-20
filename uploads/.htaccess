@@ -1,0 +1,12 @@
+# Allow direct access to files in this directory
+Options -Indexes
+
+# Serve PDFs and images directly
+<FilesMatch "\.(pdf|png|jpg|jpeg|gif|svg|webp)$">
+    Allow from all
+</FilesMatch>
+
+# Block PHP execution for security
+<FilesMatch "\.php$">
+    Deny from all
+</FilesMatch>
