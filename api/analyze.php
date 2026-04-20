@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 // ── Load config ─────────────────────────────────────────────────────────────
 $configPath = __DIR__ . '/config.json';
 if (!file_exists($configPath)) {
-    http_response_code(500);
+    http_response_code(400);
     echo json_encode(['error' => 'Configuration file not found. Please set up the admin panel.']);
     exit;
 }
@@ -33,7 +33,7 @@ $geminiApiKey = trim($config['gemini_api_key'] ?? '');
 $geminiModel  = trim($config['gemini_model']  ?? 'gemini-2.0-flash');
 
 if (empty($geminiApiKey)) {
-    http_response_code(500);
+    http_response_code(400);
     echo json_encode(['error' => 'Gemini API key not configured. Please set it in /admin/']);
     exit;
 }
@@ -232,14 +232,14 @@ $curlError      = curl_error($ch);
 curl_close($ch);
 
 if ($curlError) {
-    http_response_code(502);
+    http_response_code(400);
     echo json_encode(['error' => 'Failed to reach Gemini API: ' . $curlError]);
     exit;
 }
 
 if ($httpCode !== 200) {
     $errData = json_decode($geminiResponse, true);
-    http_response_code(502);
+    http_response_code(400);
     echo json_encode([
         'error' => 'Gemini API returned error ' . $httpCode . ': '
                  . ($errData['error']['message'] ?? $geminiResponse),
@@ -251,7 +251,7 @@ $geminiData = json_decode($geminiResponse, true);
 $rawText    = $geminiData['candidates'][0]['content']['parts'][0]['text'] ?? '';
 
 if (empty($rawText)) {
-    http_response_code(502);
+    http_response_code(400);
     echo json_encode(['error' => 'Empty response from Gemini API']);
     exit;
 }
@@ -267,7 +267,7 @@ $start = strpos($txt, '{');
 $end   = strrpos($txt, '}');
 
 if ($start === false || $end === false || $end <= $start) {
-    http_response_code(502);
+    http_response_code(400);
     echo json_encode(['error' => 'Could not find JSON object in Gemini response']);
     exit;
 }
@@ -280,7 +280,7 @@ $candidate = trim($candidate);
 $parsed = json_decode($candidate, true);
 
 if (json_last_error() !== JSON_ERROR_NONE) {
-    http_response_code(502);
+    http_response_code(400);
     echo json_encode(['error' => 'JSON parse failed: ' . json_last_error_msg()]);
     exit;
 }
@@ -298,7 +298,7 @@ if (count($parsed['dimensionInsights'] ?? []) !== 4)     $errors[] = 'dimensionI
 if (count($parsed['tagInsights']       ?? []) !== 2)     $errors[] = 'tagInsights must have exactly 2 items';
 
 if (!empty($errors)) {
-    http_response_code(502);
+    http_response_code(400);
     echo json_encode(['error' => 'Validation failed: ' . implode('; ', $errors)]);
     exit;
 }

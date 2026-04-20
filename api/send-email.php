@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 // ── Load config ──────────────────────────────────────────────────────────────
 $configPath = __DIR__ . '/config.json';
 if (!file_exists($configPath)) {
-    http_response_code(500);
+    http_response_code(400);
     echo json_encode(['error' => 'Configuration file not found']);
     exit;
 }
@@ -60,7 +60,7 @@ $fromEmail    = trim($config['graph_from_email']    ?? '');
 $fromName     = trim($config['graph_from_name']     ?? 'VCL AI Assessment');
 
 if (empty($tenantId) || empty($clientId) || empty($clientSecret) || empty($fromEmail)) {
-    http_response_code(500);
+    http_response_code(400);
     echo json_encode(['error' => 'Microsoft Graph API not configured. Please set it up in /admin/']);
     exit;
 }
@@ -94,7 +94,7 @@ $tokenCurlErr  = curl_error($ch);
 curl_close($ch);
 
 if ($tokenCurlErr) {
-    http_response_code(502);
+    http_response_code(400);
     echo json_encode(['error' => 'Failed to reach Microsoft login: ' . $tokenCurlErr]);
     exit;
 }
@@ -102,7 +102,7 @@ if ($tokenCurlErr) {
 $tokenJson = json_decode($tokenResponse, true);
 
 if ($tokenHttpCode !== 200 || empty($tokenJson['access_token'])) {
-    http_response_code(502);
+    http_response_code(400);
     $errDesc = $tokenJson['error_description'] ?? $tokenJson['error'] ?? $tokenResponse;
     echo json_encode(['error' => 'Failed to obtain access token: ' . $errDesc]);
     exit;
@@ -157,7 +157,7 @@ $sendCurlErr  = curl_error($ch);
 curl_close($ch);
 
 if ($sendCurlErr) {
-    http_response_code(502);
+    http_response_code(400);
     echo json_encode(['error' => 'Failed to reach Microsoft Graph API: ' . $sendCurlErr]);
     exit;
 }
@@ -171,7 +171,7 @@ if ($sendHttpCode === 202) {
 // Handle error
 $sendJson = json_decode($sendResponse, true);
 $errMsg   = $sendJson['error']['message'] ?? ('HTTP ' . $sendHttpCode . ': ' . $sendResponse);
-http_response_code(502);
+http_response_code(400);
 echo json_encode(['error' => 'Graph API send failed: ' . $errMsg]);
 
 // ── Fallback HTML ─────────────────────────────────────────────────────────────
