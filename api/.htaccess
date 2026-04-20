@@ -1,0 +1,12 @@
+# Deny direct access to config.json
+<Files "config.json">
+  Order allow,deny
+  Deny from all
+</Files>
+
+# Allow CORS for API endpoints
+<IfModule mod_headers.c>
+  Header always set Access-Control-Allow-Origin "*"
+  Header always set Access-Control-Allow-Methods "POST, GET, OPTIONS"
+  Header always set Access-Control-Allow-Headers "Content-Type, Authorization"
+</IfModule>

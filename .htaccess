@@ -1,8 +1,23 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
+
+  # Pass PHP files through directly (API endpoints and admin panel)
+  RewriteRule ^api/.*\.php$   - [L]
+  RewriteRule ^admin/.*\.php$ - [L]
+  RewriteRule ^admin/$        - [L]
+
+  # SPA fallback
   RewriteRule ^index\.html$ - [L]
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule . /index.html [L]
+</IfModule>
+
+# PHP settings
+<IfModule mod_php.c>
+  php_value upload_max_filesize 10M
+  php_value post_max_size 10M
+  php_value max_execution_time 120
+  php_value memory_limit 256M
 </IfModule>

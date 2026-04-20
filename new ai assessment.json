@@ -1,0 +1,389 @@
+{
+  "name": "new ai assessment",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "2be1ba9f-f1a4-48f2-979f-ca153aa43f4a",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -16,
+        0
+      ],
+      "id": "bd4bb0a6-7a4b-4506-bd7f-9852f06f89d4",
+      "name": "Webhook",
+      "webhookId": "2be1ba9f-f1a4-48f2-979f-ca153aa43f4a"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=INPUT ASSESSMENT DATA (DO NOT ALTER NUMBERS):\n{{ JSON.stringify($json.prepared, null, 2) }}\n\nADDRESSING STYLE:\nWrite as if speaking directly to the individual who submitted the assessment.\n\nDEPARTMENT USE:\nUse participantContext.department to tailor:\n- what “strong” or “weak” means for the role\n- the risks/opportunities implied by the gaps\n- the recommendations (executive-appropriate if department is Executive / C-Suite)\n\nEVIDENCE REQUIREMENT:\nFor each insight (summary, readinessWillingness diagnosis, each dimension insight):\n- You must reference evidence patterns from questionEvidence such as:\n  - comfort with accountability and disclosure\n  - tendency to validate AI outputs vs accept them\n  - willingness to redesign work vs only use AI as a helper\n  - approach to ambiguity and trade-offs\nDo NOT quote questions verbatim. Do NOT list answers. Synthesize evidence into 1–2 short signals per insight.\n\nORG CONTEXT RULE (LIMITED):\nYou may use web search ONLY to infer the industry context of the domain, and ONLY to sense-check expectations.\nDo NOT describe the organisation or its services.\nIf irrelevant or unclear, discard it.\n\nREADINESS/WILLINGNESS RULE:\nThese are assessment-level only.\nUse scores.tags:\n- readinessScorePercent = tag=readiness scorePercent\n- willingnessScorePercent = tag=willingness scorePercent\n- gapPercent = readinessScorePercent - willingnessScorePercent (use the provided numbers)\n\nOUTPUT JSON ONLY in this exact schema:\n\n{\n  \"summary\": \"\",\n  \"level\": {\n    \"number\": 0,\n    \"label\": \"\",\n    \"explanation\": \"\"\n  },\n  \"readinessWillingness\": {\n    \"readinessScorePercent\": 0,\n    \"willingnessScorePercent\": 0,\n    \"gapPercent\": 0,\n    \"diagnosis\": \"\"\n  },\n  \"dimensionInsights\": [\n    {\n      \"dimensionKey\": \"\",\n      \"dimensionTitle\": \"\",\n      \"scorePercent\": 0,\n      \"strengthOrGap\": \"\",\n      \"insight\": \"\",\n      \"evidenceSignals\": [\"\", \"\"]\n    }\n  ],\n  \"tagInsights\": [\n    {\n      \"tag\": \"\",\n      \"scorePercent\": 0,\n      \"strengthOrGap\": \"\",\n      \"insight\": \"\"\n    }\n  ],\n  \"recommendations\": {\n    \"next90Days\": [],\n    \"next12Months\": []\n  },\n  \"vclPositioning\": {\n    \"howVCLCanHelp\": \"\",\n    \"suggestedCallToAction\": \"\"\n  }\n}\n\nCONSTRAINTS:\n- summary: 4–6 sentences, executive tone, evidence-based.\n- level.explanation: 2–3 sentences.\n- dimensionInsights: exactly 4 items, one per dimension, use exact scorePercent from input.\n- strengthOrGap: \"Strength\" if scorePercent >= 70 else \"Gap\".\n- evidenceSignals: exactly 2 short signals per dimension (derived from questionEvidence).\n- tagInsights: exactly 2 items (readiness and willingness).\n- recommendations:\n  - next90Days: 3–5 actions appropriate for participantContext.department (executive actions if C-Suite)\n  - next12Months: 3–5 actions tied to role evolution and operating model change\n- No URLs, citations, org descriptions, or markdown.\n",
+        "options": {
+          "systemMessage": "You are an AI Capability & Workforce Readiness Consultant at VCL.\n\nThis assessment measures AI capability at the INDIVIDUAL role level.\nThe participantContext.department (if provided) is critical and must shape the interpretation and recommendations.\n\nYou must use BOTH:\n- quantitative signals (scores, levels, gaps)\n- qualitative evidence (patterns in questionEvidence answer selections)\n\nHard rules:\n- Do NOT write a company profile.\n- Do NOT claim results represent the whole organisation.\n- Do NOT include sources, URLs, citations, or bracketed notes.\n- Do NOT change any numeric values.\n- Output ONE valid JSON object only, starting with { and ending with }.\n- Readiness and willingness are assessment-level indicators only (never per-dimension).\n- Consultant tone: precise, evidence-based, individual-focused.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        448,
+        0
+      ],
+      "id": "acfe4a08-7bb0-482d-94a6-086c24f7300e",
+      "name": "AI Agent",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {
+          "webSearch": {
+            "searchContextSize": "medium"
+          }
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        448,
+        208
+      ],
+      "id": "96303fbe-833a-4f60-acb8-073861d92dfe",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "3Gx5mg0hMn8eSCVo",
+          "name": "mahmoud chatgpt"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1008,
+        0
+      ],
+      "id": "e3ef83dd-5756-4eb7-bcc6-7116198a9f76",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "244fbae0-d506-40a6-900d-576bbcfaf89f",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        528
+      ],
+      "id": "0d7454a4-7e01-464a-92de-82625bc5ede7",
+      "name": "export and send",
+      "webhookId": "244fbae0-d506-40a6-900d-576bbcfaf89f"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        816,
+        512
+      ],
+      "id": "3f06aacc-c825-42a7-bc74-c189c87a4e17",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c8b548b7-1e91-4338-8636-5867b005538c",
+                    "leftValue": "={{ $json.body.email }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "email"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "071a3d6a-bf0b-428c-ad3c-e6f967e8cdc9",
+                    "leftValue": "={{ $json.body.whatsAppNumber }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "whatsapp"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        224,
+        528
+      ],
+      "id": "d0a0c52a-1fac-4337-a534-af8a029e1e27",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "fromEmail": "mahmoud@vcl.solutions",
+        "toEmail": "={{ $('export and send').item.json.body.email }}",
+        "subject": "=VCL AI Assessment Results |  {{ $('export and send').item.json.body.participant.domain }}",
+        "html": "={{ $('export and send').item.json.body.emailhtml }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        480,
+        432
+      ],
+      "id": "05522a41-8bc6-45d1-9a9a-c9cd2fbef1d9",
+      "name": "Send email",
+      "webhookId": "239df3d2-6e38-41e2-a877-71433e5391f5",
+      "credentials": {
+        "smtp": {
+          "id": "77RR5yjzXRiEJW7V",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "operation": "send-document",
+        "instanceName": "mahmoud",
+        "remoteJid": "={{ $json.body.whatsAppNumber .replace('+', '') }}",
+        "media": "={{ $('export and send').item.json.body.pdfUrl }}",
+        "caption": "=hi {{ $json.body.fullName }}.\nThank you for taking the AI Readiness Assessment for {{ $json.body.participant.domain }}. \nAttached is your Results. Let me know if you need any help.",
+        "fileName": "=AI Assessment Result-{{ $json.body.participant.domain }}.pdf",
+        "options_message": {
+          "delay": 1200
+        }
+      },
+      "type": "n8n-nodes-evolution-api-en.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        480,
+        608
+      ],
+      "id": "e7447caf-3013-4844-8df7-6649f748fae4",
+      "name": "Send document",
+      "credentials": {
+        "evolutionApi": {
+          "id": "tgp09QfbWT52ZBWb",
+          "name": "Evolution account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $input.all()[0].json;\n\n// Update this path if your AI Agent output uses a different key\nconst raw =\n  j.output ??\n  j.text ??\n  j.response ??\n  j.message?.content ??\n  j.choices?.[0]?.message?.content ??\n  j.data?.choices?.[0]?.message?.content;\n\nif (!raw) {\n  throw new Error(\"Could not find AI Agent output text. Check AI Agent node output fields.\");\n}\n\nlet txt = String(raw).trim();\n\n// Remove markdown fences if any\ntxt = txt\n  .replace(/^```json\\s*/i, \"\")\n  .replace(/^```\\s*/i, \"\")\n  .replace(/```$/i, \"\")\n  .trim();\n\n// Extract JSON object boundaries\nconst start = txt.indexOf(\"{\");\nconst end = txt.lastIndexOf(\"}\");\n\nif (start === -1 || end === -1 || end <= start) {\n  throw new Error(\n    \"No JSON object boundaries found. Output starts with:\\n\" + txt.slice(0, 800)\n  );\n}\n\nlet candidate = txt.slice(start, end + 1);\n\n// Normalise common JSON issues\ncandidate = candidate\n  .replace(/[“”]/g, '\"')\n  .replace(/[‘’]/g, \"'\")\n  .replace(/,\\s*([}\\]])/g, \"$1\")\n  .replace(/[\\uFEFF\\u200B\\u200C\\u200D]/g, \"\")\n  .trim();\n\nlet parsed;\ntry {\n  parsed = JSON.parse(candidate);\n} catch (err) {\n  throw new Error(\"AI output JSON failed to parse. Candidate starts:\\n\" + candidate.slice(0, 1200));\n}\n\n// Basic validations\nfunction expect(cond, msg) {\n  if (!cond) throw new Error(msg);\n}\n\nexpect(typeof parsed.summary === \"string\", \"summary must be a string\");\nexpect(parsed.level && typeof parsed.level === \"object\", \"level must be an object\");\nexpect(parsed.readinessWillingness && typeof parsed.readinessWillingness === \"object\", \"readinessWillingness must be an object\");\nexpect(Array.isArray(parsed.dimensionInsights), \"dimensionInsights must be an array\");\nexpect(Array.isArray(parsed.tagInsights), \"tagInsights must be an array\");\nexpect(parsed.recommendations && typeof parsed.recommendations === \"object\", \"recommendations must be an object\");\nexpect(parsed.vclPositioning && typeof parsed.vclPositioning === \"object\", \"vclPositioning must be an object\");\n\n// Enforce counts\nexpect(parsed.dimensionInsights.length === 4, \"dimensionInsights must contain exactly 4 items\");\nexpect(parsed.tagInsights.length === 2, \"tagInsights must contain exactly 2 items\");\n\n// No readiness/willingness inside dimensions\nfor (const d of parsed.dimensionInsights) {\n  expect(typeof d.dimensionKey === \"string\", \"dimensionKey must be string\");\n  expect(typeof d.dimensionTitle === \"string\", \"dimensionTitle must be string\");\n  expect(typeof d.scorePercent === \"number\", \"scorePercent must be number\");\n  expect(typeof d.strengthOrGap === \"string\", \"strengthOrGap must be string\");\n  expect(typeof d.insight === \"string\", \"insight must be string\");\n  expect(d.signals === undefined, \"dimensionInsights must not include signals (readiness/willingness are assessment-level only)\");\n}\n\nreturn [{ json: parsed }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        0
+      ],
+      "id": "0aeef23e-3ad7-4253-8d37-3f083d2496bc",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const incoming = $input.all()[0].json;\nconst body = incoming.body ?? incoming;\n\nif (!body.participant || !body.scores || !Array.isArray(body.questions)) {\n  throw new Error(\n    \"Missing expected fields: participant, scores, questions. Got: \" +\n      JSON.stringify(body, null, 2)\n  );\n}\n\nconst participant = body.participant;\nconst scores = body.scores;\nconst questions = body.questions;\n\nconst prepared = {\n  participant: {\n    domain: participant.domain || \"N/A\",\n    originalWebsite: participant.originalWebsite || \"N/A\",\n  },\n  participantContext: {\n    department: participant.department || \"Unspecified\"\n  },\n  scores: {\n    overallPercent: scores.overallPercent,\n    levelNumber: scores.levelNumber,\n    levelLabel: scores.levelLabel,\n    dimensions: scores.dimensions || [],\n    tags: scores.tags || []\n  },\n  questionEvidence: questions.map(q => ({\n    questionKey: q.questionKey,\n    dimensionKey: q.dimensionKey,\n    dimensionTitle: q.dimensionTitle,\n    tags: q.tags,\n    answerGrade: q.answerGrade,\n    answerLabel: q.answerLabel,\n    questionText: q.questionText\n  }))\n};\n\nreturn [{ json: { prepared } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        0
+      ],
+      "id": "15776f47-5946-49e9-84fc-dda8d4168721",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        []
+      ]
+    },
+    "export and send": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Send email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send email": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send document": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "42f12b95-7133-4133-9c09-3cdf3b254306",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a2749a2241987e155a5ec61e26c74dd18a7e7c7ee58fe2b2623b0c5dd6c548ce"
+  },
+  "id": "Dr2Zkh130jQXlVqF",
+  "tags": []
+}
