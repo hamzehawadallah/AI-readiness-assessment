@@ -1,12 +1,10 @@
 {
   "gemini_api_key": "",
   "gemini_model": "gemini-2.0-flash",
-  "smtp_host": "",
-  "smtp_port": 587,
-  "smtp_encryption": "tls",
-  "smtp_username": "",
-  "smtp_password": "",
-  "smtp_from_email": "mahmoud@vcl.solutions",
-  "smtp_from_name": "VCL AI Assessment",
+  "graph_tenant_id": "",
+  "graph_client_id": "",
+  "graph_client_secret": "",
+  "graph_from_email": "",
+  "graph_from_name": "VCL AI Assessment",
   "admin_password": "admin123"
 }

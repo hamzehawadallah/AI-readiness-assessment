@@ -1,7 +1,7 @@
 <?php
 /**
  * VCL AI Assessment — Admin Settings Panel
- * Manage Gemini API key and SMTP email settings.
+ * Manage Gemini API key and Microsoft Graph API (email) settings.
  * Protected by admin password stored in /api/config.json
  */
 
@@ -55,15 +55,13 @@ if ($isLoggedIn && isset($_POST['action']) && $_POST['action'] === 'save') {
     }
 
     if ($section === 'email') {
-        $config['smtp_host']       = trim($_POST['smtp_host']       ?? '');
-        $config['smtp_port']       = intval($_POST['smtp_port']     ?? 587);
-        $config['smtp_encryption'] = trim($_POST['smtp_encryption'] ?? 'tls');
-        $config['smtp_username']   = trim($_POST['smtp_username']   ?? '');
-        if (!empty($_POST['smtp_password'])) {
-            $config['smtp_password'] = $_POST['smtp_password'];
+        $config['graph_tenant_id']     = trim($_POST['graph_tenant_id']     ?? '');
+        $config['graph_client_id']     = trim($_POST['graph_client_id']     ?? '');
+        if (!empty($_POST['graph_client_secret'])) {
+            $config['graph_client_secret'] = $_POST['graph_client_secret'];
         }
-        $config['smtp_from_email'] = trim($_POST['smtp_from_email'] ?? '');
-        $config['smtp_from_name']  = trim($_POST['smtp_from_name']  ?? '');
+        $config['graph_from_email'] = trim($_POST['graph_from_email'] ?? '');
+        $config['graph_from_name']  = trim($_POST['graph_from_name']  ?? 'VCL AI Assessment');
         saveConfig($configPath, $config);
         $message   = 'Email settings saved successfully.';
         $activeTab = 'email';
@@ -90,19 +88,30 @@ $testResult = '';
 if ($isLoggedIn && isset($_POST['action']) && $_POST['action'] === 'test_email') {
     $testTo = trim($_POST['test_email_to'] ?? '');
     if (filter_var($testTo, FILTER_VALIDATE_EMAIL)) {
-        try {
-            require_once dirname(__DIR__) . '/api/send-email.php';
-            // Re-include just the class — we call it directly
-            $m = new SimpleSMTP(
-                $config['smtp_host'], intval($config['smtp_port']),
-                $config['smtp_encryption'] ?? 'tls',
-                $config['smtp_username'], $config['smtp_password'],
-                $config['smtp_from_email'], $config['smtp_from_name']
-            );
-            $m->send($testTo, 'VCL Admin — SMTP Test', '<html><body style="font-family:sans-serif;padding:32px"><h2 style="color:#CE2823">✅ SMTP Test Successful</h2><p>This is a test email from the VCL AI Assessment admin panel. Your SMTP configuration is working correctly.</p></body></html>');
-            $testResult = 'success:Test email sent to ' . $testTo;
-        } catch (Exception $e) {
-            $testResult = 'error:' . $e->getMessage();
+        // Call the send-email endpoint internally via curl
+        $payload = json_encode([
+            'email'     => $testTo,
+            'emailhtml' => '<html><body style="font-family:sans-serif;padding:32px"><h2 style="color:#CE2823">✅ Graph API Test Successful</h2><p>This is a test email from the VCL AI Assessment admin panel. Your Microsoft Graph API configuration is working correctly.</p></body></html>',
+            'fullName'  => 'Admin Test',
+            'domain'    => 'vcl.solutions',
+            'participant' => ['domain' => 'vcl.solutions'],
+        ]);
+        $ch = curl_init((isset($_SERVER['HTTPS'])&&$_SERVER['HTTPS']==='on'?'https':'http').'://'.$_SERVER['HTTP_HOST'].'/api/send-email.php');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => $payload,
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+            CURLOPT_TIMEOUT        => 30,
+        ]);
+        $res      = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        $resJson  = json_decode($res, true);
+        if ($httpCode === 200 && !empty($resJson['success'])) {
+            $testResult = 'success:Test email sent to ' . $testTo . ' via Microsoft Graph API';
+        } else {
+            $testResult = 'error:' . ($resJson['error'] ?? ('HTTP '.$httpCode.': '.$res));
         }
     } else {
         $testResult = 'error:Please enter a valid email address.';
@@ -110,16 +119,16 @@ if ($isLoggedIn && isset($_POST['action']) && $_POST['action'] === 'test_email')
     $activeTab = 'email';
 }
 
-$geminiKey   = $config['gemini_api_key']  ?? '';
-$geminiModel = $config['gemini_model']    ?? 'gemini-2.0-flash';
-$smtpHost    = $config['smtp_host']       ?? '';
-$smtpPort    = $config['smtp_port']       ?? 587;
-$smtpEnc     = $config['smtp_encryption'] ?? 'tls';
-$smtpUser    = $config['smtp_username']   ?? '';
-$smtpFrom    = $config['smtp_from_email'] ?? '';
-$smtpName    = $config['smtp_from_name']  ?? 'VCL AI Assessment';
+$geminiKey      = $config['gemini_api_key']      ?? '';
+$geminiModel    = $config['gemini_model']         ?? 'gemini-2.0-flash';
+$graphTenantId  = $config['graph_tenant_id']      ?? '';
+$graphClientId  = $config['graph_client_id']      ?? '';
+$graphSecret    = $config['graph_client_secret']  ?? '';
+$graphFromEmail = $config['graph_from_email']     ?? '';
+$graphFromName  = $config['graph_from_name']      ?? 'VCL AI Assessment';
 
-$maskedKey = $geminiKey ? '••••••••' . substr($geminiKey, -4) : '';
+$maskedKey    = $geminiKey   ? '••••••••' . substr($geminiKey, -4)   : '';
+$maskedSecret = $graphSecret ? '••••••••' . substr($graphSecret, -4) : '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -384,7 +393,7 @@ $maskedKey = $geminiKey ? '••••••••' . substr($geminiKey, -4) : 
   <!-- Tabs -->
   <div class="tabs">
     <a href="?tab=ai"       class="tab <?= $activeTab==='ai'       ? 'active':'' ?>">🤖 AI (Gemini)</a>
-    <a href="?tab=email"    class="tab <?= $activeTab==='email'    ? 'active':'' ?>">📧 Email (SMTP)</a>
+    <a href="?tab=email"    class="tab <?= $activeTab==='email'    ? 'active':'' ?>">📧 Email (Graph API)</a>
     <a href="?tab=security" class="tab <?= $activeTab==='security' ? 'active':'' ?>">🔒 Security</a>
   </div>
 
@@ -445,11 +454,11 @@ $maskedKey = $geminiKey ? '••••••••' . substr($geminiKey, -4) : 
   </div>
   <?php endif; ?>
 
-  <!-- ── Tab: Email / SMTP ─────────────────────────────────────────────────── -->
+  <!-- ── Tab: Email / Microsoft Graph API ──────────────────────────────────── -->
   <?php if ($activeTab === 'email'): ?>
   <div class="card">
-    <div class="card-title">📧 SMTP Email Configuration</div>
-    <div class="card-desc">Configure the SMTP server used to send AI assessment results to participants.</div>
+    <div class="card-title">📧 Microsoft Graph API — Email Configuration</div>
+    <div class="card-desc">Configure Office 365 email delivery via Microsoft Graph API. No SMTP ports — all via secure HTTPS.</div>
 
     <?php if ($testResult): ?>
       <?php [$tType, $tMsg] = explode(':', $testResult, 2); ?>
@@ -458,71 +467,79 @@ $maskedKey = $geminiKey ? '••••••••' . substr($geminiKey, -4) : 
       </div>
     <?php endif; ?>
 
+    <div class="info-box">
+      ℹ️ You need an <strong>Azure App Registration</strong> with <code>Mail.Send</code> Application permission (not delegated).
+      Go to <strong>portal.azure.com</strong> → Azure Active Directory → App registrations → New registration.
+      After creating the app, add <em>API permissions → Microsoft Graph → Application → Mail.Send</em> and grant admin consent.
+    </div>
+
     <form method="POST">
       <input type="hidden" name="action"  value="save">
       <input type="hidden" name="section" value="email">
 
-      <div class="row-3">
+      <div class="row-2">
         <div class="form-group">
-          <label>SMTP Host
-            <?php if ($smtpHost): ?>
+          <label>Tenant ID (Directory ID)
+            <?php if ($graphTenantId): ?>
               <span style="color:var(--green)"><span class="status-dot dot-green"></span>Set</span>
             <?php endif; ?>
           </label>
-          <input type="text" name="smtp_host" value="<?= htmlspecialchars($smtpHost) ?>"
-                 placeholder="mail.vcl.solutions">
+          <input type="text" name="graph_tenant_id" value="<?= htmlspecialchars($graphTenantId) ?>"
+                 placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
         </div>
         <div class="form-group">
-          <label>Port</label>
-          <input type="number" name="smtp_port" value="<?= (int)$smtpPort ?>" placeholder="587">
-        </div>
-        <div class="form-group">
-          <label>Encryption</label>
-          <select name="smtp_encryption">
-            <option value="tls"  <?= $smtpEnc==='tls' ?'selected':'' ?>>STARTTLS (587)</option>
-            <option value="ssl"  <?= $smtpEnc==='ssl' ?'selected':'' ?>>SSL/TLS (465)</option>
-            <option value="none" <?= $smtpEnc==='none'?'selected':'' ?>>None</option>
-          </select>
+          <label>Client ID (Application ID)
+            <?php if ($graphClientId): ?>
+              <span style="color:var(--green)"><span class="status-dot dot-green"></span>Set</span>
+            <?php endif; ?>
+          </label>
+          <input type="text" name="graph_client_id" value="<?= htmlspecialchars($graphClientId) ?>"
+                 placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
         </div>
       </div>
 
-      <div class="row-2">
-        <div class="form-group">
-          <label>SMTP Username</label>
-          <input type="text" name="smtp_username" value="<?= htmlspecialchars($smtpUser) ?>"
-                 placeholder="user@yourdomain.com">
+      <div class="form-group">
+        <label>Client Secret
+          <?php if ($graphSecret): ?>
+            <span style="color:var(--green)"><span class="status-dot dot-green"></span>Configured (<?= $maskedSecret ?>)</span>
+          <?php else: ?>
+            <span style="color:var(--red)"><span class="status-dot dot-red"></span>Not set</span>
+          <?php endif; ?>
+        </label>
+        <div class="input-wrap">
+          <input type="password" name="graph_client_secret" id="graphSecret"
+                 placeholder="<?= $graphSecret ? $maskedSecret : 'Enter client secret' ?>"
+                 autocomplete="new-password">
+          <button type="button" class="eye-btn" onclick="togglePass('graphSecret',this)">👁</button>
         </div>
-        <div class="form-group">
-          <label>SMTP Password</label>
-          <div class="input-wrap">
-            <input type="password" name="smtp_password" id="smtpPass"
-                   placeholder="<?= $config['smtp_password'] ? '••••••••' : 'Enter password' ?>"
-                   autocomplete="new-password">
-            <button type="button" class="eye-btn" onclick="togglePass('smtpPass',this)">👁</button>
-          </div>
-        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:6px">Leave blank to keep the existing secret. Found under App registrations → Certificates &amp; secrets.</p>
       </div>
 
       <hr class="divider">
       <p style="font-size:13px;color:var(--muted);margin-bottom:16px">
-        <strong style="color:var(--text)">Sender details</strong> — shown as the From address in assessment result emails.
+        <strong style="color:var(--text)">Sender mailbox</strong> — the Office 365 account that assessment emails will be sent from.
+        The app must have <code>Mail.Send</code> permission over this mailbox.
       </p>
 
       <div class="row-2">
         <div class="form-group">
-          <label>From Email</label>
-          <input type="email" name="smtp_from_email" value="<?= htmlspecialchars($smtpFrom) ?>"
+          <label>From Email
+            <?php if ($graphFromEmail): ?>
+              <span style="color:var(--green)"><span class="status-dot dot-green"></span>Set</span>
+            <?php endif; ?>
+          </label>
+          <input type="email" name="graph_from_email" value="<?= htmlspecialchars($graphFromEmail) ?>"
                  placeholder="mahmoud@vcl.solutions">
         </div>
         <div class="form-group">
           <label>From Name</label>
-          <input type="text" name="smtp_from_name" value="<?= htmlspecialchars($smtpName) ?>"
+          <input type="text" name="graph_from_name" value="<?= htmlspecialchars($graphFromName) ?>"
                  placeholder="VCL AI Assessment">
         </div>
       </div>
 
       <div class="form-footer">
-        <div style="font-size:13px;color:var(--muted)">Leave password blank to keep existing.</div>
+        <div style="font-size:13px;color:var(--muted)">Leave secret blank to keep existing value.</div>
         <button type="submit" class="btn btn-primary">Save Email Settings</button>
       </div>
     </form>
@@ -530,8 +547,8 @@ $maskedKey = $geminiKey ? '••••••••' . substr($geminiKey, -4) : 
 
   <!-- Test email -->
   <div class="card">
-    <div class="card-title">🧪 Test Email Connection</div>
-    <div class="card-desc">Send a test email to verify your SMTP settings are working correctly.</div>
+    <div class="card-title">🧪 Test Graph API Email</div>
+    <div class="card-desc">Send a test email to verify your Microsoft Graph API configuration is working correctly.</div>
     <form method="POST">
       <input type="hidden" name="action" value="test_email">
       <div style="display:flex;gap:12px;align-items:flex-end">
@@ -589,7 +606,7 @@ $maskedKey = $geminiKey ? '••••••••' . substr($geminiKey, -4) : 
     <div style="display:flex;flex-direction:column;gap:12px">
       <?php
       $base = (isset($_SERVER['HTTPS'])&&$_SERVER['HTTPS']==='on'?'https':'http').'://'.$_SERVER['HTTP_HOST'];
-      foreach (['/api/analyze.php'=>'AI Analysis (Gemini)', '/api/send-email.php'=>'Email Delivery (SMTP)', '/api/settings.php'=>'Settings API'] as $endpoint=>$label): ?>
+      foreach (['/api/analyze.php'=>'AI Analysis (Gemini)', '/api/send-email.php'=>'Email Delivery (Microsoft Graph API)', '/api/settings.php'=>'Settings API'] as $endpoint=>$label): ?>
         <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">
           <div>
             <div style="font-weight:500;font-size:14px"><?= $label ?></div>

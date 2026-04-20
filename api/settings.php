@@ -46,8 +46,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (!empty($safe['gemini_api_key'])) {
         $safe['gemini_api_key'] = '****' . substr($safe['gemini_api_key'], -4);
     }
-    if (!empty($safe['smtp_password'])) {
-        $safe['smtp_password'] = '••••••••';
+    if (!empty($safe['graph_client_secret'])) {
+        $safe['graph_client_secret'] = '••••••••';
     }
     unset($safe['admin_password']);
     echo json_encode(['success' => true, 'settings' => $safe]);
@@ -61,17 +61,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $allowed = [
         'gemini_api_key', 'gemini_model',
-        'smtp_host', 'smtp_port', 'smtp_encryption',
-        'smtp_username', 'smtp_password',
-        'smtp_from_email', 'smtp_from_name',
+        'graph_tenant_id', 'graph_client_id', 'graph_client_secret',
+        'graph_from_email', 'graph_from_name',
         'admin_password',
     ];
 
     foreach ($allowed as $key) {
         if (array_key_exists($key, $updates)) {
             // Don't overwrite masked values
-            if ($key === 'gemini_api_key' && str_starts_with($updates[$key], '****')) continue;
-            if ($key === 'smtp_password'  && $updates[$key] === '••••••••')            continue;
+            if ($key === 'gemini_api_key'     && str_starts_with($updates[$key], '****')) continue;
+            if ($key === 'graph_client_secret' && $updates[$key] === '••••••••')            continue;
             $config[$key] = $updates[$key];
         }
     }

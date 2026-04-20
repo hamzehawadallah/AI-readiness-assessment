@@ -1,8 +1,8 @@
 <?php
 /**
- * Email Delivery Endpoint
+ * Email Delivery Endpoint — Microsoft Graph API
  * Replaces the n8n "export and send" webhook.
- * Sends assessment results via SMTP email. WhatsApp removed.
+ * Sends assessment results via Microsoft Graph API (Office 365). No SMTP.
  */
 
 header('Access-Control-Allow-Origin: *');
@@ -40,7 +40,7 @@ $emailHtml = $body['emailhtml']     ?? $body['emailHtml'] ?? '';
 $fullName  = $body['fullName']      ?? $body['full_name'] ?? '';
 $domain    = $body['participant']['domain'] ?? $body['domain'] ?? 'Assessment';
 
-// If no email provided, nothing to do (WhatsApp removed)
+// If no email provided (e.g. WhatsApp channel — removed), skip gracefully
 if (empty($email)) {
     echo json_encode(['success' => true, 'message' => 'No email address provided — skipped']);
     exit;
@@ -52,152 +52,137 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
-// ── SMTP settings ────────────────────────────────────────────────────────────
-$smtpHost       = trim($config['smtp_host']       ?? '');
-$smtpPort       = intval($config['smtp_port']      ?? 587);
-$smtpEncryption = strtolower(trim($config['smtp_encryption'] ?? 'tls'));
-$smtpUsername   = trim($config['smtp_username']   ?? '');
-$smtpPassword   = $config['smtp_password']         ?? '';
-$fromEmail      = trim($config['smtp_from_email'] ?? 'noreply@vcl.solutions');
-$fromName       = trim($config['smtp_from_name']  ?? 'VCL AI Assessment');
+// ── Microsoft Graph API settings ─────────────────────────────────────────────
+$tenantId     = trim($config['graph_tenant_id']     ?? '');
+$clientId     = trim($config['graph_client_id']     ?? '');
+$clientSecret = trim($config['graph_client_secret'] ?? '');
+$fromEmail    = trim($config['graph_from_email']    ?? '');
+$fromName     = trim($config['graph_from_name']     ?? 'VCL AI Assessment');
 
-if (empty($smtpHost)) {
+if (empty($tenantId) || empty($clientId) || empty($clientSecret) || empty($fromEmail)) {
     http_response_code(500);
-    echo json_encode(['error' => 'SMTP not configured. Please set it up in /admin/']);
+    echo json_encode(['error' => 'Microsoft Graph API not configured. Please set it up in /admin/']);
     exit;
 }
 
-// ── Build subject ────────────────────────────────────────────────────────────
-$subject = 'VCL AI Assessment Results | ' . $domain;
+// ── Build email content ───────────────────────────────────────────────────────
+$subject  = 'VCL AI Assessment Results | ' . $domain;
+$htmlBody = $emailHtml ?: buildFallbackHtml($fullName, $domain);
 
-// ── Send email via SMTP ───────────────────────────────────────────────────────
-try {
-    $mailer = new SimpleSMTP($smtpHost, $smtpPort, $smtpEncryption, $smtpUsername, $smtpPassword, $fromEmail, $fromName);
-    $mailer->send($email, $subject, $emailHtml ?: buildFallbackHtml($fullName, $domain));
-    echo json_encode(['success' => true, 'message' => 'Email sent to ' . $email]);
-} catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Failed to send email: ' . $e->getMessage()]);
+// ── Step 1: Get OAuth2 access token ──────────────────────────────────────────
+$tokenUrl  = "https://login.microsoftonline.com/{$tenantId}/oauth2/v2.0/token";
+$tokenData = http_build_query([
+    'grant_type'    => 'client_credentials',
+    'client_id'     => $clientId,
+    'client_secret' => $clientSecret,
+    'scope'         => 'https://graph.microsoft.com/.default',
+]);
+
+$ch = curl_init($tokenUrl);
+curl_setopt_array($ch, [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_POST           => true,
+    CURLOPT_POSTFIELDS     => $tokenData,
+    CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
+    CURLOPT_TIMEOUT        => 30,
+    CURLOPT_SSL_VERIFYPEER => true,
+]);
+
+$tokenResponse = curl_exec($ch);
+$tokenHttpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$tokenCurlErr  = curl_error($ch);
+curl_close($ch);
+
+if ($tokenCurlErr) {
+    http_response_code(502);
+    echo json_encode(['error' => 'Failed to reach Microsoft login: ' . $tokenCurlErr]);
+    exit;
 }
 
-// ── Fallback HTML if no emailhtml provided ───────────────────────────────────
+$tokenJson = json_decode($tokenResponse, true);
+
+if ($tokenHttpCode !== 200 || empty($tokenJson['access_token'])) {
+    http_response_code(502);
+    $errDesc = $tokenJson['error_description'] ?? $tokenJson['error'] ?? $tokenResponse;
+    echo json_encode(['error' => 'Failed to obtain access token: ' . $errDesc]);
+    exit;
+}
+
+$accessToken = $tokenJson['access_token'];
+
+// ── Step 2: Send email via Graph API ──────────────────────────────────────────
+$sendMailUrl = "https://graph.microsoft.com/v1.0/users/" . urlencode($fromEmail) . "/sendMail";
+
+$mailPayload = json_encode([
+    'message' => [
+        'subject' => $subject,
+        'body'    => [
+            'contentType' => 'HTML',
+            'content'     => $htmlBody,
+        ],
+        'from' => [
+            'emailAddress' => [
+                'address' => $fromEmail,
+                'name'    => $fromName,
+            ],
+        ],
+        'toRecipients' => [
+            [
+                'emailAddress' => [
+                    'address' => $email,
+                    'name'    => $fullName ?: $email,
+                ],
+            ],
+        ],
+    ],
+    'saveToSentItems' => true,
+], JSON_UNESCAPED_UNICODE);
+
+$ch = curl_init($sendMailUrl);
+curl_setopt_array($ch, [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_POST           => true,
+    CURLOPT_POSTFIELDS     => $mailPayload,
+    CURLOPT_HTTPHEADER     => [
+        'Authorization: Bearer ' . $accessToken,
+        'Content-Type: application/json',
+    ],
+    CURLOPT_TIMEOUT        => 30,
+    CURLOPT_SSL_VERIFYPEER => true,
+]);
+
+$sendResponse = curl_exec($ch);
+$sendHttpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$sendCurlErr  = curl_error($ch);
+curl_close($ch);
+
+if ($sendCurlErr) {
+    http_response_code(502);
+    echo json_encode(['error' => 'Failed to reach Microsoft Graph API: ' . $sendCurlErr]);
+    exit;
+}
+
+// Graph API returns 202 Accepted on success (no body)
+if ($sendHttpCode === 202) {
+    echo json_encode(['success' => true, 'message' => 'Email sent to ' . $email]);
+    exit;
+}
+
+// Handle error
+$sendJson = json_decode($sendResponse, true);
+$errMsg   = $sendJson['error']['message'] ?? ('HTTP ' . $sendHttpCode . ': ' . $sendResponse);
+http_response_code(502);
+echo json_encode(['error' => 'Graph API send failed: ' . $errMsg]);
+
+// ── Fallback HTML ─────────────────────────────────────────────────────────────
 function buildFallbackHtml(string $name, string $domain): string {
     $n = htmlspecialchars($name ?: 'there');
     $d = htmlspecialchars($domain);
-    return "<html><body style='font-family:sans-serif;color:#333;padding:32px'>
-        <h2>VCL AI Assessment Results</h2>
+    return "<!DOCTYPE html><html><body style='font-family:sans-serif;color:#333;padding:32px;max-width:600px;margin:0 auto'>
+        <h2 style='color:#CE2823'>VCL AI Assessment Results</h2>
         <p>Hi {$n},</p>
         <p>Thank you for completing the AI Readiness Assessment for <strong>{$d}</strong>.</p>
-        <p>Your results have been processed. Please contact us if you did not receive them.</p>
-        <p>Best regards,<br>The VCL Team</p>
+        <p>Your personalised results have been processed. Please contact us if you need any assistance.</p>
+        <p style='margin-top:32px'>Best regards,<br><strong>The VCL Team</strong></p>
     </body></html>";
-}
-
-// ── Minimal SMTP client (no external libraries needed) ───────────────────────
-class SimpleSMTP {
-    private string $host;
-    private int    $port;
-    private string $encryption;
-    private string $username;
-    private string $password;
-    private string $fromEmail;
-    private string $fromName;
-    /** @var resource */
-    private $conn;
-
-    public function __construct(
-        string $host, int $port, string $encryption,
-        string $username, string $password,
-        string $fromEmail, string $fromName
-    ) {
-        $this->host       = $host;
-        $this->port       = $port;
-        $this->encryption = $encryption; // 'ssl' | 'tls' | 'none'
-        $this->username   = $username;
-        $this->password   = $password;
-        $this->fromEmail  = $fromEmail;
-        $this->fromName   = $fromName;
-    }
-
-    public function send(string $toEmail, string $subject, string $htmlBody): void {
-        $prefix = ($this->encryption === 'ssl') ? 'ssl://' : '';
-        $errno  = 0;
-        $errstr = '';
-
-        $this->conn = @fsockopen($prefix . $this->host, $this->port, $errno, $errstr, 30);
-        if (!$this->conn) {
-            throw new Exception("SMTP connection failed ({$errno}): {$errstr}");
-        }
-
-        stream_set_timeout($this->conn, 30);
-
-        $this->read(); // greeting
-
-        $this->cmd("EHLO " . (gethostname() ?: 'localhost'));
-
-        // STARTTLS for port 587
-        if ($this->encryption === 'tls') {
-            $this->cmd("STARTTLS");
-            if (!stream_socket_enable_crypto($this->conn, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
-                throw new Exception("STARTTLS negotiation failed");
-            }
-            $this->cmd("EHLO " . (gethostname() ?: 'localhost'));
-        }
-
-        // AUTH LOGIN
-        if (!empty($this->username)) {
-            $this->cmd("AUTH LOGIN");
-            $this->cmd(base64_encode($this->username));
-            $resp = $this->cmd(base64_encode($this->password));
-            if (substr($resp, 0, 3) !== '235') {
-                throw new Exception("SMTP authentication failed: {$resp}");
-            }
-        }
-
-        $this->cmd("MAIL FROM:<{$this->fromEmail}>");
-        $resp = $this->cmd("RCPT TO:<{$toEmail}>");
-        if (substr($resp, 0, 3) !== '250') {
-            throw new Exception("RCPT TO rejected: {$resp}");
-        }
-
-        $this->cmd("DATA");
-
-        $encodedSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
-        $fromHeader     = $this->fromName
-            ? '"' . addslashes($this->fromName) . '" <' . $this->fromEmail . '>'
-            : $this->fromEmail;
-
-        $message  = "From: {$fromHeader}\r\n";
-        $message .= "To: {$toEmail}\r\n";
-        $message .= "Subject: {$encodedSubject}\r\n";
-        $message .= "MIME-Version: 1.0\r\n";
-        $message .= "Content-Type: text/html; charset=UTF-8\r\n";
-        $message .= "Content-Transfer-Encoding: base64\r\n";
-        $message .= "Date: " . date('r') . "\r\n";
-        $message .= "X-Mailer: VCL-AI-Assessment/1.0\r\n";
-        $message .= "\r\n";
-        $message .= chunk_split(base64_encode($htmlBody));
-        $message .= "\r\n.";
-
-        fputs($this->conn, $message . "\r\n");
-        $this->read();
-
-        $this->cmd("QUIT");
-        fclose($this->conn);
-    }
-
-    private function cmd(string $cmd): string {
-        fputs($this->conn, $cmd . "\r\n");
-        return $this->read();
-    }
-
-    private function read(): string {
-        $response = '';
-        while ($line = fgets($this->conn, 515)) {
-            $response .= $line;
-            // A line not ending with '-' after the code means end of response
-            if (substr($line, 3, 1) === ' ') break;
-        }
-        return trim($response);
-    }
 }
