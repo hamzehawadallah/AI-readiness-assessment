@@ -27,3 +27,4 @@ jobs:
             **/node_modules/**
             .builds/**
             123.md
+            api/config.json
