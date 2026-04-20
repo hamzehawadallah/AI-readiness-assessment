@@ -1,0 +1,61 @@
+
+added 407 packages, and audited 408 packages in 43s
+
+79 packages are looking for funding
+  run `npm fund` for details
+
+20 vulnerabilities (5 moderate, 14 high, 1 critical)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+npm notice
+npm notice New major version of npm available! 10.9.2 -> 11.10.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.10.1
+npm notice To update run: npm install -g npm@11.10.1
+npm notice
+
+> vite_react_shadcn_ts@0.0.0 build
+> vite build
+
+vite v5.4.19 building for production...
+transforming...
+Browserslist: browsers data (caniuse-lite) is 8 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+[vite:css] @import must precede all other statements (besides @charset or empty @layer)
+3  |  @tailwind utilities;
+4  |  
+5  |  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
+   |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+6  |  
+7  |  @import url("https://fonts.googleapis.com/css2?family=Poppins&display=swap");
+[vite:css] @import must precede all other statements (besides @charset or empty @layer)
+5  |  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
+6  |  
+7  |  @import url("https://fonts.googleapis.com/css2?family=Poppins&display=swap");
+   |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+8  |  
+9  |  @layer base {
+✓ 3059 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                              1.58 kB │ gzip:   0.67 kB
+dist/assets/vcl-logo-BtsGNwH1.svg           16.94 kB │ gzip:   3.84 kB
+dist/assets/vcl-logo-x_dmny37.png           39.67 kB
+dist/assets/index-C96iFHdU.css              77.41 kB │ gzip:  12.84 kB
+dist/assets/vcl-logo-B2XJapnl.js             0.06 kB │ gzip:   0.08 kB
+dist/assets/purify.es-C5KSVp3G.js           22.74 kB │ gzip:   8.75 kB
+dist/assets/index.es-B5ca1s3O.js           150.55 kB │ gzip:  51.31 kB
+dist/assets/html2canvas.esm-CBrSDip1.js    201.42 kB │ gzip:  47.70 kB
+dist/assets/index-OpjeBagO.js            1,619.57 kB │ gzip: 472.35 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 10.53s
