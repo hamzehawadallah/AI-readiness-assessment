@@ -1,0 +1,5 @@
+# Dependencies
+node_modules/
+
+# Credentials — never commit server config
+api/config.json
