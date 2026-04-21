@@ -69,7 +69,7 @@ async function generatePdfBase64(reportData: ReportData, fullName: string): Prom
   return await generateReportBase64(pdfData);
 }
 
-function generateEmailHtml(reportData: ReportData, fullName: string, logoUrl: string): string {
+function generateEmailHtml(reportData: ReportData, fullName: string, logoUrl: string, pdfUrl?: string | null): string {
   const { overallScore, levelLabel, levelNumber, scores, agentInsights, participant } = reportData;
   const parsedResult = agentInsights;
   const scoreColor = getScoreColor(overallScore);
@@ -248,6 +248,20 @@ function generateEmailHtml(reportData: ReportData, fullName: string, logoUrl: st
           </tr>
           ` : ''}
           ${vclPositioningHtml}
+          ${pdfUrl ? `
+          <tr>
+            <td style="padding: 0 40px 20px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f0f5fa; border-radius: 12px; border: 1px solid #dbeafe;">
+                <tr>
+                  <td style="padding: 20px 25px; text-align: center;">
+                    <p style="margin: 0 0 14px; color: #374151; font-size: 14px; font-weight: 600;">Your full PDF report is ready to download</p>
+                    <a href="${pdfUrl}" style="display: inline-block; background-color: #1e293b; color: #ffffff; text-decoration: none; padding: 11px 28px; border-radius: 8px; font-size: 14px; font-weight: 600;">&#8595; Download PDF Report</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          ` : ''}
           <tr>
             <td style="padding: 0 40px 30px;">
               <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #fef2f2; border-radius: 12px; border: 1px solid #fecaca;">
@@ -364,7 +378,7 @@ export function useReportDelivery(
       const logoUrl = isEmail ? await ensureLogoInStorage() : '';
       
       // Generate HTML email template for email delivery
-      const emailHtml = isEmail ? generateEmailHtml(reportData, name.trim(), logoUrl) : null;
+      const emailHtml = isEmail ? generateEmailHtml(reportData, name.trim(), logoUrl, pdfUrl) : null;
       
       // Use the stored PDF URL if available
       const pdfUrl = savedResultInfo?.pdfUrl || null;
