@@ -11,8 +11,8 @@ export default function Admin() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50" style={{ colorScheme: 'light' }}>
+        <Loader2 className="h-8 w-8 animate-spin text-[#ce2823]" />
       </div>
     );
   }
@@ -25,9 +25,9 @@ export default function Admin() {
   // Logged in but not admin
   if (!isAdmin) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-8">
-        <h1 className="text-2xl font-bold text-foreground">Access Denied</h1>
-        <p className="text-muted-foreground text-center max-w-md">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-8 bg-gray-50" style={{ colorScheme: 'light' }}>
+        <h1 className="text-2xl font-bold text-gray-900">Access Denied</h1>
+        <p className="text-gray-500 text-center max-w-md">
           Your account does not have admin privileges. Please contact an administrator if you believe this is an error.
         </p>
         <button
