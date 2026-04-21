@@ -143,17 +143,17 @@ $maskedSecret = $graphSecret ? '••••••••' . substr($graphSecret,
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg:       #0f1117;
-    --surface:  #1a1d27;
-    --surface2: #222537;
-    --border:   #2e3147;
-    --text:     #e8eaf0;
-    --muted:    #8b90a8;
+    --bg:       #f8fafc;
+    --surface:  #ffffff;
+    --surface2: #f1f5f9;
+    --border:   #e2e8f0;
+    --text:     #1e293b;
+    --muted:    #64748b;
     --accent:      #CE2823;
-    --accent-lite: rgba(206,40,35,.12);
-    --green:    #22c55e;
-    --yellow:   #f59e0b;
-    --red:      #ef4444;
+    --accent-lite: rgba(206,40,35,.10);
+    --green:    #16a34a;
+    --yellow:   #d97706;
+    --red:      #dc2626;
     --radius:   12px;
   }
 
@@ -280,9 +280,9 @@ $maskedSecret = $graphSecret ? '••••••••' . substr($graphSecret,
     display: flex; align-items: center; gap: 10px;
     padding: 13px 16px; border-radius: 9px; font-size: 14px; margin-bottom: 20px;
   }
-  .alert-success { background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.3); color: #4ade80; }
-  .alert-error   { background: rgba(239,68,68,.1);  border: 1px solid rgba(239,68,68,.3);  color: #f87171; }
-  .alert-info    { background: rgba(59,130,246,.1); border: 1px solid rgba(59,130,246,.3); color: #93c5fd; }
+  .alert-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
+  .alert-error   { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; }
+  .alert-info    { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
 
   /* ── Status dot ── */
   .status-dot {

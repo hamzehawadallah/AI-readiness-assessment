@@ -7,6 +7,9 @@
   RewriteRule ^admin/.*\.php$ - [L]
   RewriteRule ^admin/$        - [L]
 
+  # /admin (exact, no trailing slash) → React SPA admin dashboard
+  RewriteRule ^admin$ /index.html [L]
+
   # SPA fallback
   RewriteRule ^index\.html$ - [L]
   RewriteCond %{REQUEST_FILENAME} !-f
