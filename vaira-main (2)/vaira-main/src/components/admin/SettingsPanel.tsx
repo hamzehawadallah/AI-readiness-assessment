@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
@@ -315,12 +316,18 @@ export function SettingsPanel() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="gemini-model">Gemini Model</Label>
-              <Input
-                id="gemini-model"
-                value={geminiModel}
-                onChange={(e) => setGeminiModel(e.target.value)}
-                placeholder="gemini-2.0-flash"
-              />
+              <Select value={geminiModel} onValueChange={setGeminiModel}>
+                <SelectTrigger id="gemini-model">
+                  <SelectValue placeholder="Select a model" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="gemini-2.5-flash">gemini-2.5-flash (recommended)</SelectItem>
+                  <SelectItem value="gemini-2.5-pro">gemini-2.5-pro</SelectItem>
+                  <SelectItem value="gemini-2.0-flash-001">gemini-2.0-flash-001</SelectItem>
+                  <SelectItem value="gemini-1.5-flash">gemini-1.5-flash</SelectItem>
+                  <SelectItem value="gemini-1.5-pro">gemini-1.5-pro</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
