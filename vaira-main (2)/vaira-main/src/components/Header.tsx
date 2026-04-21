@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 
 export function Header() {
   const location = useLocation();
-  const isAdminPage = location.pathname === "/admin";
+  const isAdminPage = location.pathname === "/dashboard";
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
