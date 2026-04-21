@@ -55,6 +55,12 @@ $participant = $body['participant'];
 $scores      = $body['scores'];
 $questions   = is_array($body['questions']) ? $body['questions'] : [];
 
+if (empty($questions)) {
+    http_response_code(400);
+    echo json_encode(['error' => 'questions array cannot be empty']);
+    exit;
+}
+
 // ── Prepare data (mirrors n8n "Code in JavaScript" node) ────────────────────
 $prepared = [
     'participant' => [
@@ -83,6 +89,8 @@ $prepared = [
         ];
     }, $questions),
 ];
+
+$dimensionCount = count($prepared['scores']['dimensions']);
 
 // ── System message (exact replica from n8n) ──────────────────────────────────
 $systemMessage = <<<SYS
@@ -190,7 +198,7 @@ OUTPUT JSON ONLY in this exact schema:
 CONSTRAINTS:
 - summary: 4–6 sentences, executive tone, evidence-based.
 - level.explanation: 2–3 sentences.
-- dimensionInsights: exactly 4 items, one per dimension, use exact scorePercent from input.
+- dimensionInsights: exactly {$dimensionCount} items, one per dimension, use exact scorePercent from input.
 - strengthOrGap: "Strength" if scorePercent >= 70 else "Gap".
 - evidenceSignals: exactly 2 short signals per dimension (derived from questionEvidence).
 - tagInsights: exactly 2 items (readiness and willingness).
@@ -294,7 +302,7 @@ if (!is_array( $parsed['dimensionInsights']    ?? null)) $errors[] = 'dimensionI
 if (!is_array( $parsed['tagInsights']          ?? null)) $errors[] = 'tagInsights must be an array';
 if (!is_array( $parsed['recommendations']      ?? null)) $errors[] = 'recommendations must be an object';
 if (!is_array( $parsed['vclPositioning']       ?? null)) $errors[] = 'vclPositioning must be an object';
-if (count($parsed['dimensionInsights'] ?? []) !== 4)     $errors[] = 'dimensionInsights must have exactly 4 items';
+if (count($parsed['dimensionInsights'] ?? []) !== $dimensionCount) $errors[] = "dimensionInsights must have exactly {$dimensionCount} items";
 if (count($parsed['tagInsights']       ?? []) !== 2)     $errors[] = 'tagInsights must have exactly 2 items';
 
 if (!empty($errors)) {

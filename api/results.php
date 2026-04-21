@@ -21,6 +21,10 @@ if ($method === 'POST') {
         jsonError('participant_id is required');
     }
 
+    if (!isset($body['overall_score'], $body['level_number'], $body['level_label'])) {
+        jsonError('overall_score, level_number, and level_label are required');
+    }
+
     $id   = generateUuid();
     $db   = getDb();
     $stmt = $db->prepare(
