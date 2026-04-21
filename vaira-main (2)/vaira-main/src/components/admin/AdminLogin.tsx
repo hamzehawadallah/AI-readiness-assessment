@@ -9,7 +9,6 @@ import { toast } from "@/hooks/use-toast";
 
 export function AdminLogin() {
   const { signIn, signUp } = useAuth();
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
@@ -17,10 +16,10 @@ export function AdminLogin() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email.trim() || !password.trim()) {
+    if (!password.trim()) {
       toast({
-        title: "Missing credentials",
-        description: "Please enter both email and password.",
+        title: "Missing password",
+        description: "Please enter your admin password.",
         variant: "destructive",
       });
       return;
@@ -30,7 +29,7 @@ export function AdminLogin() {
 
     try {
       if (isSignUp) {
-        const { error } = await signUp(email.trim(), password);
+        const { error } = await signUp('', password);
         if (error) {
           toast({
             title: "Sign up failed",
@@ -45,13 +44,15 @@ export function AdminLogin() {
           setIsSignUp(false);
         }
       } else {
-        const { error } = await signIn(email.trim(), password);
+        const { error } = await signIn('', password);
         if (error) {
           toast({
             title: "Login failed",
             description: error.message || "Invalid email or password.",
             variant: "destructive",
           });
+        } else {
+          window.location.reload();
         }
       }
     } catch (err) {
@@ -82,18 +83,6 @@ export function AdminLogin() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="admin@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
-                autoComplete="email"
-              />
-            </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input

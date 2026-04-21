@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { useSettings } from "@/hooks/useSettings";
 import { toast } from "sonner";
-import { Loader2, Save, Webhook, Play, CheckCircle, XCircle, FileText, Info, Eye, EyeOff, Bot } from "lucide-react";
+import { Loader2, Save, Webhook, Play, CheckCircle, XCircle, FileText, Info, Eye, EyeOff, Bot, Mail, Send } from "lucide-react";
 import { LogoUpload } from "./LogoUpload";
 import { LANDING_CONTENT, LIKERT_SCALE, VCL_CONTACT, BLOCKED_EMAIL_DOMAINS } from "@/config/assessment";
 
@@ -168,7 +168,16 @@ export function SettingsPanel() {
   const [geminiApiKey, setGeminiApiKey] = useState("");
   const [geminiModel, setGeminiModel] = useState("gemini-2.0-flash");
   const [showGeminiKey, setShowGeminiKey] = useState(false);
+  const [graphTenantId, setGraphTenantId] = useState("");
+  const [graphClientId, setGraphClientId] = useState("");
+  const [graphClientSecret, setGraphClientSecret] = useState("");
+  const [showGraphSecret, setShowGraphSecret] = useState(false);
+  const [graphFromEmail, setGraphFromEmail] = useState("");
+  const [graphFromName, setGraphFromName] = useState("VCL AI Assessment");
+  const [testEmailTo, setTestEmailTo] = useState("");
+  const [testingEmail, setTestingEmail] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savingEmail, setSavingEmail] = useState(false);
   const [testingResults, setTestingResults] = useState(false);
   const [testingDelivery, setTestingDelivery] = useState(false);
 
@@ -179,11 +188,21 @@ export function SettingsPanel() {
       const whatsapp = settings.find(s => s.key === "whatsapp_enabled");
       const geminiKey = settings.find(s => s.key === "gemini_api_key");
       const geminiMod = settings.find(s => s.key === "gemini_model");
+      const tenantId  = settings.find(s => s.key === "graph_tenant_id");
+      const clientId  = settings.find(s => s.key === "graph_client_id");
+      const secret    = settings.find(s => s.key === "graph_client_secret");
+      const fromEmail = settings.find(s => s.key === "graph_from_email");
+      const fromName  = settings.find(s => s.key === "graph_from_name");
       if (webhook) setWebhookUrl(webhook.value);
       if (delivery) setDeliveryWebhookUrl(delivery.value);
       if (whatsapp) setWhatsappEnabled(whatsapp.value === "true");
       if (geminiKey) setGeminiApiKey(geminiKey.value);
       if (geminiMod) setGeminiModel(geminiMod.value);
+      if (tenantId)  setGraphTenantId(tenantId.value);
+      if (clientId)  setGraphClientId(clientId.value);
+      if (secret)    setGraphClientSecret(secret.value);
+      if (fromEmail) setGraphFromEmail(fromEmail.value);
+      if (fromName)  setGraphFromName(fromName.value);
     }
   }, [settings]);
 
@@ -202,6 +221,48 @@ export function SettingsPanel() {
       toast.error("Failed to save settings");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveEmail = async () => {
+    setSavingEmail(true);
+    try {
+      await updateSetting("graph_tenant_id", graphTenantId);
+      await updateSetting("graph_client_id", graphClientId);
+      if (graphClientSecret && graphClientSecret !== "••••••••") {
+        await updateSetting("graph_client_secret", graphClientSecret);
+      }
+      await updateSetting("graph_from_email", graphFromEmail);
+      await updateSetting("graph_from_name", graphFromName);
+      toast.success("Email settings saved successfully");
+    } catch {
+      toast.error("Failed to save email settings");
+    } finally {
+      setSavingEmail(false);
+    }
+  };
+
+  const handleTestEmail = async () => {
+    if (!testEmailTo) { toast.error("Enter a test email address"); return; }
+    setTestingEmail(true);
+    try {
+      const res = await fetch("/api/send-email.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: testEmailTo,
+          fullName: "Admin Test",
+          emailhtml: "<html><body style='font-family:sans-serif;padding:32px'><h2 style='color:#CE2823'>✅ Graph API Test</h2><p>Your Microsoft Graph API email configuration is working correctly.</p></body></html>",
+          participant: { domain: "vcl.solutions" },
+        }),
+      });
+      const data = await res.json();
+      if (data.success) toast.success("Test email sent successfully");
+      else toast.error("Failed: " + (data.error || "Unknown error"));
+    } catch {
+      toast.error("Could not reach email endpoint");
+    } finally {
+      setTestingEmail(false);
     }
   };
 
@@ -258,6 +319,7 @@ export function SettingsPanel() {
     <Tabs defaultValue="general" className="space-y-6">
       <TabsList>
         <TabsTrigger value="general">General</TabsTrigger>
+        <TabsTrigger value="email">Email</TabsTrigger>
         <TabsTrigger value="narratives">Narratives & Prompts</TabsTrigger>
       </TabsList>
 
@@ -422,6 +484,87 @@ export function SettingsPanel() {
                 </>
               )}
             </Button>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="email" className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="w-5 h-5" />
+              Microsoft Graph API — Email Configuration
+            </CardTitle>
+            <CardDescription>
+              Configure Office 365 email delivery via Microsoft Graph API. Requires an Azure App Registration with Mail.Send permission.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="graph-tenant">Tenant ID (Directory ID)</Label>
+                <Input id="graph-tenant" value={graphTenantId} onChange={e => setGraphTenantId(e.target.value)} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="graph-client">Client ID (Application ID)</Label>
+                <Input id="graph-client" value={graphClientId} onChange={e => setGraphClientId(e.target.value)} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="graph-secret">Client Secret</Label>
+              <div className="relative">
+                <Input
+                  id="graph-secret"
+                  type={showGraphSecret ? "text" : "password"}
+                  value={graphClientSecret}
+                  onChange={e => setGraphClientSecret(e.target.value)}
+                  placeholder="Leave blank to keep existing secret"
+                  className="pr-10"
+                />
+                <Button type="button" variant="ghost" size="sm"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowGraphSecret(v => !v)}>
+                  {showGraphSecret ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                </Button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="graph-from-email">From Email</Label>
+                <Input id="graph-from-email" type="email" value={graphFromEmail} onChange={e => setGraphFromEmail(e.target.value)} placeholder="info@vcl.solutions" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="graph-from-name">From Name</Label>
+                <Input id="graph-from-name" value={graphFromName} onChange={e => setGraphFromName(e.target.value)} placeholder="VCL AI Assessment" />
+              </div>
+            </div>
+            <Button onClick={handleSaveEmail} disabled={savingEmail} className="w-full sm:w-auto">
+              {savingEmail ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</> : <><Save className="w-4 h-4 mr-2" />Save Email Settings</>}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Send className="w-5 h-5" />
+              Test Email
+            </CardTitle>
+            <CardDescription>Send a test email to verify your Microsoft Graph API configuration.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <Input
+                type="email"
+                value={testEmailTo}
+                onChange={e => setTestEmailTo(e.target.value)}
+                placeholder="your@email.com"
+                className="flex-1"
+              />
+              <Button onClick={handleTestEmail} disabled={testingEmail}>
+                {testingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send Test"}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </TabsContent>
