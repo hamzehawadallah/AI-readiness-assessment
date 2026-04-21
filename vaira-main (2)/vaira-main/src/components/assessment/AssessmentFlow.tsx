@@ -120,7 +120,10 @@ export function AssessmentFlow() {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errBody = await response.json().catch(() => ({}));
+        const errMsg = (errBody as any)?.error || `HTTP error! status: ${response.status}`;
+        console.error("analyze.php error response:", errBody);
+        throw new Error(errMsg);
       }
 
       const rawData = await response.json();
