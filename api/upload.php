@@ -37,55 +37,70 @@ if ($method === 'GET') {
 
 // ── POST: upload ──────────────────────────────────────────────────────────────
 if ($method === 'POST') {
-    $type = $_POST['type'] ?? 'report'; // 'report' | 'logo'
+    $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+
+    // ── JSON / base64 path (used by PDF uploads) ──────────────────────────────
+    if (str_contains($contentType, 'application/json')) {
+        $input    = json_decode(file_get_contents('php://input'), true) ?? [];
+        $type     = $input['type']     ?? 'report';
+        $b64      = $input['data']     ?? '';
+        $filename = basename($input['filename'] ?? generateUuid()) . '.pdf';
+
+        if (empty($b64)) {
+            jsonError('No file data provided');
+        }
+
+        $decoded = base64_decode($b64, true);
+        if ($decoded === false) {
+            jsonError('Invalid base64 data');
+        }
+
+        $maxBytes = 10 * 1024 * 1024; // 10 MB
+        if (strlen($decoded) > $maxBytes) {
+            jsonError('File too large (max 10 MB)');
+        }
+
+        $dest = $reportsDir . '/' . $filename;
+        if (file_put_contents($dest, $decoded) === false) {
+            jsonError('Failed to save PDF — check directory permissions', 500);
+        }
+
+        echo json_encode([
+            'success'  => true,
+            'url'      => $baseUrl . '/reports/' . $filename,
+            'filename' => $filename,
+        ]);
+        exit;
+    }
+
+    // ── FormData / multipart path (used by logo uploads) ─────────────────────
+    $type = $_POST['type'] ?? 'logo';
 
     if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
         jsonError('No valid file uploaded');
     }
 
     $file     = $_FILES['file'];
-    $maxBytes = 10 * 1024 * 1024; // 10 MB
+    $maxBytes = 10 * 1024 * 1024;
 
     if ($file['size'] > $maxBytes) {
         jsonError('File too large (max 10 MB)');
     }
 
-    if ($type === 'logo') {
-        // Validate image
-        $allowed = ['image/png', 'image/jpeg', 'image/gif', 'image/svg+xml', 'image/webp'];
-        if (!in_array($file['type'], $allowed)) {
-            jsonError('Invalid file type. Allowed: PNG, JPG, GIF, SVG, WEBP');
-        }
-
-        $dest = $uploadsRoot . '/email-logo.png';
-        if (!move_uploaded_file($file['tmp_name'], $dest)) {
-            jsonError('Failed to save logo', 500);
-        }
-
-        echo json_encode([
-            'success' => true,
-            'url'     => $baseUrl . '/email-logo.png',
-        ]);
-        exit;
+    // Only logo uploads come through FormData now
+    $allowed = ['image/png', 'image/jpeg', 'image/gif', 'image/svg+xml', 'image/webp'];
+    if (!in_array($file['type'], $allowed)) {
+        jsonError('Invalid file type. Allowed: PNG, JPG, GIF, SVG, WEBP');
     }
 
-    // type === 'report' (PDF)
-    if ($file['type'] !== 'application/pdf') {
-        jsonError('Invalid file type. Expected PDF.');
-    }
-
-    $filename = ($_POST['filename'] ?? generateUuid()) . '.pdf';
-    $filename = basename($filename); // safety: no path traversal
-    $dest     = $reportsDir . '/' . $filename;
-
+    $dest = $uploadsRoot . '/email-logo.png';
     if (!move_uploaded_file($file['tmp_name'], $dest)) {
-        jsonError('Failed to save PDF', 500);
+        jsonError('Failed to save logo', 500);
     }
 
     echo json_encode([
-        'success'  => true,
-        'url'      => $baseUrl . '/reports/' . $filename,
-        'filename' => $filename,
+        'success' => true,
+        'url'     => $baseUrl . '/email-logo.png',
     ]);
     exit;
 }

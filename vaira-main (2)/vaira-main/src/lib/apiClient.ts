@@ -183,11 +183,19 @@ export const uploadApi = {
     blob: Blob,
     filename: string,
   ): Promise<{ success: boolean; url: string; filename: string }> => {
-    const form = new FormData();
-    form.append('file', blob, filename);
-    form.append('type', 'report');
-    form.append('filename', filename.replace('.pdf', ''));
-    const res = await fetch('/api/upload.php', { method: 'POST', body: form });
+    // Convert blob to base64 and send as JSON to avoid PHP multipart upload
+    // restrictions (upload_max_filesize, temp dir permissions, etc.)
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve((reader.result as string).split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+    const res = await fetch('/api/upload.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'report', filename: filename.replace('.pdf', ''), data: base64 }),
+    });
     if (!res.ok) throw new Error(`PDF upload failed: ${res.status}`);
     return res.json();
   },
