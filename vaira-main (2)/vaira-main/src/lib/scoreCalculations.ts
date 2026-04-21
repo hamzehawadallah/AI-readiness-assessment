@@ -34,7 +34,7 @@ function getMaturityLevel(score: number): { number: number; label: string } {
 
 // Convert 1-4 score to percentage (0-100)
 function scoreToPercent(score: number): number {
-  return ((score - 1) / 3) * 100;
+  return Math.min(100, Math.max(0, ((score - 1) / 3) * 100));
 }
 
 export function calculateScores(

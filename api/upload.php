@@ -15,8 +15,12 @@ $baseUrl      = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'http
               . '://' . $_SERVER['HTTP_HOST'] . '/uploads';
 
 // Ensure directories exist
-if (!is_dir($uploadsRoot)) mkdir($uploadsRoot, 0755, true);
-if (!is_dir($reportsDir))  mkdir($reportsDir,  0755, true);
+if (!is_dir($uploadsRoot) && !mkdir($uploadsRoot, 0755, true) && !is_dir($uploadsRoot)) {
+    jsonError('Could not create uploads directory', 500);
+}
+if (!is_dir($reportsDir) && !mkdir($reportsDir, 0755, true) && !is_dir($reportsDir)) {
+    jsonError('Could not create reports directory', 500);
+}
 
 $method = $_SERVER['REQUEST_METHOD'];
 

@@ -64,15 +64,17 @@ export async function saveAssessmentResult(
       vclPositioning:          agentResult?.vclPositioning?.howVCLCanHelp || '',
     };
 
-    const pdfBlob = await generateReportBlob(pdfData);
-    const filename = `report-${resultId}`;
-
-    // 4. Upload PDF
-    const uploadResult = await uploadApi.uploadPdf(pdfBlob, filename + '.pdf');
-    const pdfUrl = uploadResult.url;
-
-    // 5. Update result with PDF URL
-    await resultsApi.updatePdfUrl(resultId, pdfUrl);
+    // 4. Generate & upload PDF (non-blocking — failure does not prevent results from showing)
+    let pdfUrl = '';
+    try {
+      const pdfBlob = await generateReportBlob(pdfData);
+      const filename = `report-${resultId}`;
+      const uploadResult = await uploadApi.uploadPdf(pdfBlob, filename + '.pdf');
+      pdfUrl = uploadResult.url;
+      await resultsApi.updatePdfUrl(resultId, pdfUrl);
+    } catch (pdfErr) {
+      console.warn('PDF generation/upload failed (non-fatal):', pdfErr);
+    }
 
     return { participantId, resultId, pdfUrl };
   } catch (err) {
