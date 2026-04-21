@@ -2,10 +2,8 @@
   RewriteEngine On
   RewriteBase /
 
-  # Pass PHP files through directly (API endpoints and admin panel)
-  RewriteRule ^api/.*\.php$   - [L]
-  RewriteRule ^admin/.*\.php$ - [L]
-  RewriteRule ^admin/$        - [L]
+  # Pass PHP API files through directly
+  RewriteRule ^api/.*\.php$ - [L]
 
   # SPA fallback
   RewriteRule ^index\.html$ - [L]
