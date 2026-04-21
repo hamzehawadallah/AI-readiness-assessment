@@ -18,13 +18,6 @@ interface ReportData {
   levelLabel: string;
 }
 
-const dimensionLabels: Record<string, string> = {
-  strategyGovernance: "Strategy & Governance",
-  useCasesValue: "Use Cases & Value",
-  peopleSkills: "People & Skills",
-  dataTechWaysOfWorking: "Data, Tech & Ways of Working"
-};
-
 const getScoreColor = (score: number): string => {
   if (score >= 80) return "#22c55e"; // green-500
   if (score >= 60) return "#84cc16"; // lime-500

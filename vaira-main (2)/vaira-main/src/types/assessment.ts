@@ -2,39 +2,10 @@
  * Type definitions for the VCL AI Readiness Assessment
  */
 
-export interface ParticipantInfo {
-  name: string;
-  role: string;
-  organization: string;
-  country: string;
-  industry: string;
-  companySize: string;
-}
-
-export interface AssessmentAnswers {
-  strategyGovernance: number[];
-  useCasesValue: number[];
-  peopleSkills: number[];
-  dataTechWaysOfWorking: number[];
-}
-
-export interface EmailCapture {
-  email: string;
-  consentToContact: boolean;
-}
-
 export interface CompanyWebsite {
   originalWebsite: string;
   domain: string;
   department: string;
-}
-
-export interface AssessmentPayload {
-  participant: {
-    originalWebsite: string;
-    domain: string;
-  };
-  answers: AssessmentAnswers;
 }
 
 export interface DimensionInsight {
