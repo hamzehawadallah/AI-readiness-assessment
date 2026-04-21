@@ -2,6 +2,9 @@
   RewriteEngine On
   RewriteBase /
 
+  # Prevent Apache from auto-appending trailing slash to /admin
+  DirectorySlash Off
+
   # Pass PHP files through directly (API endpoints and admin panel)
   RewriteRule ^api/.*\.php$   - [L]
   RewriteRule ^admin/.*\.php$ - [L]
