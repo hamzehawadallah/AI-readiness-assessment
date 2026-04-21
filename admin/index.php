@@ -341,7 +341,7 @@ $maskedSecret = $graphSecret ? '••••••••' . substr($graphSecret,
   </div>
   <div style="display:flex;align-items:center;gap:12px">
     <?php if ($isLoggedIn): ?>
-      <a href="/admin" class="btn btn-primary btn-sm" style="text-decoration:none">⚙️ Questions Setup</a>
+      <a href="/dashboard" class="btn btn-primary btn-sm" style="text-decoration:none">⚙️ Questions Setup</a>
     <?php endif; ?>
     <span class="header-badge">⚡ VCL AI Assessment</span>
     <?php if ($isLoggedIn): ?>
