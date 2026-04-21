@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { useSettings } from "@/hooks/useSettings";
 import { toast } from "sonner";
-import { Loader2, Save, Webhook, Play, CheckCircle, XCircle, FileText, Info, Eye, EyeOff, Bot, Mail, Send } from "lucide-react";
+import { Loader2, Save, FileText, Info, Eye, EyeOff, Bot, Mail, Send } from "lucide-react";
 import { LogoUpload } from "./LogoUpload";
 import { LANDING_CONTENT, LIKERT_SCALE, VCL_CONTACT, BLOCKED_EMAIL_DOMAINS } from "@/config/assessment";
 
@@ -162,8 +162,6 @@ const SYSTEM_NARRATIVES = [
 
 export function SettingsPanel() {
   const { settings, loading, updateSetting, refetch } = useSettings();
-  const [webhookUrl, setWebhookUrl] = useState("");
-  const [deliveryWebhookUrl, setDeliveryWebhookUrl] = useState("");
   const [whatsappEnabled, setWhatsappEnabled] = useState(true);
   const [geminiApiKey, setGeminiApiKey] = useState("");
   const [geminiModel, setGeminiModel] = useState("gemini-2.0-flash");
@@ -178,13 +176,9 @@ export function SettingsPanel() {
   const [testingEmail, setTestingEmail] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savingEmail, setSavingEmail] = useState(false);
-  const [testingResults, setTestingResults] = useState(false);
-  const [testingDelivery, setTestingDelivery] = useState(false);
 
   useEffect(() => {
     if (settings.length > 0) {
-      const webhook = settings.find(s => s.key === "webhook_url");
-      const delivery = settings.find(s => s.key === "delivery_webhook_url");
       const whatsapp = settings.find(s => s.key === "whatsapp_enabled");
       const geminiKey = settings.find(s => s.key === "gemini_api_key");
       const geminiMod = settings.find(s => s.key === "gemini_model");
@@ -193,8 +187,6 @@ export function SettingsPanel() {
       const secret    = settings.find(s => s.key === "graph_client_secret");
       const fromEmail = settings.find(s => s.key === "graph_from_email");
       const fromName  = settings.find(s => s.key === "graph_from_name");
-      if (webhook) setWebhookUrl(webhook.value);
-      if (delivery) setDeliveryWebhookUrl(delivery.value);
       if (whatsapp) setWhatsappEnabled(whatsapp.value === "true");
       if (geminiKey) setGeminiApiKey(geminiKey.value);
       if (geminiMod) setGeminiModel(geminiMod.value);
@@ -209,8 +201,6 @@ export function SettingsPanel() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await updateSetting("webhook_url", webhookUrl);
-      await updateSetting("delivery_webhook_url", deliveryWebhookUrl);
       await updateSetting("whatsapp_enabled", whatsappEnabled ? "true" : "false");
       if (geminiApiKey && !geminiApiKey.startsWith("****")) {
         await updateSetting("gemini_api_key", geminiApiKey);
@@ -263,47 +253,6 @@ export function SettingsPanel() {
       toast.error("Could not reach email endpoint");
     } finally {
       setTestingEmail(false);
-    }
-  };
-
-  const testWebhook = async (url: string, type: "results" | "delivery") => {
-    if (!url) {
-      toast.error("Please enter a webhook URL first");
-      return;
-    }
-
-    const setTesting = type === "results" ? setTestingResults : setTestingDelivery;
-    setTesting(true);
-
-    try {
-      const testPayload = {
-        test: true,
-        timestamp: new Date().toISOString(),
-        source: "VCL Admin Panel",
-        type: type === "results" ? "results_calculation_test" : "delivery_test",
-      };
-
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(testPayload),
-      });
-
-      if (response.ok) {
-        toast.success(`${type === "results" ? "Results" : "Delivery"} webhook responded successfully`, {
-          icon: <CheckCircle className="w-4 h-4 text-green-500" />,
-        });
-      } else {
-        toast.error(`Webhook returned status ${response.status}`, {
-          icon: <XCircle className="w-4 h-4 text-red-500" />,
-        });
-      }
-    } catch (error) {
-      toast.error(`Failed to reach webhook: ${error instanceof Error ? error.message : "Unknown error"}`, {
-        icon: <XCircle className="w-4 h-4 text-red-500" />,
-      });
-    } finally {
-      setTesting(false);
     }
   };
 
@@ -400,92 +349,19 @@ export function SettingsPanel() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Webhook className="w-5 h-5" />
-              Webhook Configuration
-            </CardTitle>
-            <CardDescription>
-              Configure the webhook URLs used for assessment processing and report delivery.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="webhook-url">Results Calculation Webhook</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="webhook-url"
-                  type="url"
-                  value={webhookUrl}
-                  onChange={(e) => setWebhookUrl(e.target.value)}
-                  placeholder="https://n8n.dopes.me/webhook/..."
-                  className="flex-1"
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => testWebhook(webhookUrl, "results")}
-                  disabled={testingResults}
-                  title="Test webhook"
-                >
-                  {testingResults ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Play className="w-4 h-4" />
-                  )}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                This webhook is called to process assessment results and generate insights.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="delivery-webhook-url">Report Delivery Webhook</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="delivery-webhook-url"
-                  type="url"
-                  value={deliveryWebhookUrl}
-                  onChange={(e) => setDeliveryWebhookUrl(e.target.value)}
-                  placeholder="https://n8n.dopes.me/webhook/..."
-                  className="flex-1"
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => testWebhook(deliveryWebhookUrl, "delivery")}
-                  disabled={testingDelivery}
-                  title="Test webhook"
-                >
-                  {testingDelivery ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Play className="w-4 h-4" />
-                  )}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                This webhook is called to send reports via email or WhatsApp.
-              </p>
-            </div>
-
-            <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
-              {saving ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Settings
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
+        <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
+          {saving ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="w-4 h-4 mr-2" />
+              Save Settings
+            </>
+          )}
+        </Button>
       </TabsContent>
 
       <TabsContent value="email" className="space-y-6">
