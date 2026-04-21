@@ -164,7 +164,7 @@ export function SettingsPanel() {
   const { settings, loading, updateSetting, refetch } = useSettings();
   const [whatsappEnabled, setWhatsappEnabled] = useState(true);
   const [geminiApiKey, setGeminiApiKey] = useState("");
-  const [geminiModel, setGeminiModel] = useState("gemini-2.0-flash");
+  const [geminiModel, setGeminiModel] = useState("gemini-2.5-flash");
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [graphTenantId, setGraphTenantId] = useState("");
   const [graphClientId, setGraphClientId] = useState("");

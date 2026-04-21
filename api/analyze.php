@@ -30,7 +30,7 @@ if (!file_exists($configPath)) {
 }
 $config = json_decode(file_get_contents($configPath), true);
 $geminiApiKey = trim($config['gemini_api_key'] ?? '');
-$geminiModel  = trim($config['gemini_model']  ?? 'gemini-2.0-flash');
+$geminiModel  = trim($config['gemini_model']  ?? 'gemini-2.5-flash');
 
 if (empty($geminiApiKey)) {
     http_response_code(400);

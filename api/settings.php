@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         // Return all non-secret settings for admin panel
         $safe = [
-            'gemini_model'          => $config['gemini_model']         ?? 'gemini-2.0-flash',
+            'gemini_model'          => $config['gemini_model']         ?? 'gemini-2.5-flash',
             'graph_tenant_id'       => $config['graph_tenant_id']      ?? '',
             'graph_client_id'       => $config['graph_client_id']      ?? '',
             'graph_from_email'      => $config['graph_from_email']     ?? '',
