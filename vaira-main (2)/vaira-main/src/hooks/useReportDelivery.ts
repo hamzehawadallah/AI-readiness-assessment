@@ -374,14 +374,14 @@ export function useReportDelivery(
     }));
 
     try {
-      // Ensure logo is in storage for email use (PNG format for email client compatibility)
-      const logoUrl = isEmail ? await ensureLogoInStorage() : '';
-      
-      // Generate HTML email template for email delivery
-      const emailHtml = isEmail ? generateEmailHtml(reportData, name.trim(), logoUrl, pdfUrl) : null;
-      
       // Use the stored PDF URL if available
       const pdfUrl = savedResultInfo?.pdfUrl || null;
+
+      // Ensure logo is in storage for email use (PNG format for email client compatibility)
+      const logoUrl = isEmail ? await ensureLogoInStorage() : '';
+
+      // Generate HTML email template for email delivery
+      const emailHtml = isEmail ? generateEmailHtml(reportData, name.trim(), logoUrl, pdfUrl) : null;
       
       console.log("Report delivery - savedResultInfo:", savedResultInfo);
       console.log("Report delivery - pdfUrl:", pdfUrl);

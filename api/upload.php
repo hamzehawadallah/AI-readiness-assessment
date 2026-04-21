@@ -14,17 +14,9 @@ $reportsDir   = $uploadsRoot . '/reports';
 $baseUrl      = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
               . '://' . $_SERVER['HTTP_HOST'] . '/uploads';
 
-// Ensure directories exist
-if (!is_dir($uploadsRoot) && !mkdir($uploadsRoot, 0755, true) && !is_dir($uploadsRoot)) {
-    jsonError('Could not create uploads directory', 500);
-}
-if (!is_dir($reportsDir) && !mkdir($reportsDir, 0755, true) && !is_dir($reportsDir)) {
-    jsonError('Could not create reports directory', 500);
-}
-
 $method = $_SERVER['REQUEST_METHOD'];
 
-// ── GET: check logo ───────────────────────────────────────────────────────────
+// ── GET: check logo (read-only — no directory creation needed) ────────────────
 if ($method === 'GET') {
     $logoPath = $uploadsRoot . '/email-logo.png';
     $exists   = file_exists($logoPath);
@@ -35,12 +27,20 @@ if ($method === 'GET') {
     exit;
 }
 
+// ── Ensure upload directories exist (only needed for write operations) ────────
+if (!is_dir($uploadsRoot) && !mkdir($uploadsRoot, 0755, true) && !is_dir($uploadsRoot)) {
+    jsonError('Could not create uploads directory', 500);
+}
+if (!is_dir($reportsDir) && !mkdir($reportsDir, 0755, true) && !is_dir($reportsDir)) {
+    jsonError('Could not create reports directory', 500);
+}
+
 // ── POST: upload ──────────────────────────────────────────────────────────────
 if ($method === 'POST') {
     $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
 
     // ── JSON / base64 path (used by PDF uploads) ──────────────────────────────
-    if (str_contains($contentType, 'application/json')) {
+    if (strpos($contentType, 'application/json') !== false) {
         $input    = json_decode(file_get_contents('php://input'), true) ?? [];
         $type     = $input['type']     ?? 'report';
         $b64      = $input['data']     ?? '';
