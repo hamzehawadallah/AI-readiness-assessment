@@ -1,0 +1,7 @@
+project_id = "vbvemeqqidrgmyxehxqx"
+
+[functions.create-admin]
+verify_jwt = false
+
+[functions.update-participant]
+verify_jwt = false

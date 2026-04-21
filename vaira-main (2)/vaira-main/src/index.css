@@ -1,0 +1,163 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
+
+@import url("https://fonts.googleapis.com/css2?family=Poppins&display=swap");
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 222 47% 18%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 222 47% 18%;
+
+    --muted: 210 20% 94%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 2 71% 47%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 2 71% 47%;
+
+    --radius: 0.75rem;
+
+    /* Custom VCL tokens */
+    --vcl-navy: 222 47% 18%;
+    --vcl-navy-light: 222 35% 28%;
+    --vcl-teal: 2 71% 47%;
+    --vcl-teal-light: 2 61% 57%;
+    --vcl-amber: 38 92% 50%;
+    --vcl-slate: 215 16% 47%;
+    --vcl-cream: 40 33% 96%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+    --font-sans: Poppins, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 14%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 14%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 2 71% 47%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 222 35% 22%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 222 35% 22%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 2 71% 47%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 222 35% 22%;
+    --input: 222 35% 22%;
+    --ring: 2 71% 47%;
+
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+    --font-sans: Poppins, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: 'Playfair Display', serif;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: 'Playfair Display', serif;
+  }
+
+  .font-body {
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer components {
+  .vcl-card {
+    @apply bg-card rounded-xl border border-border shadow-sm p-6 md:p-8;
+  }
+
+  .vcl-card-elevated {
+    @apply bg-card rounded-xl border border-border shadow-lg p-6 md:p-8;
+  }
+
+  .vcl-section {
+    @apply py-12 md:py-16 lg:py-20;
+  }
+
+  .vcl-container {
+    @apply max-w-4xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .vcl-heading-1 {
+    @apply text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground leading-tight tracking-tight;
+  }
+
+  .vcl-heading-2 {
+    @apply text-2xl md:text-3xl lg:text-4xl font-display font-semibold text-foreground;
+  }
+
+  .vcl-heading-3 {
+    @apply text-xl md:text-2xl font-display font-medium text-foreground;
+  }
+
+  .vcl-body {
+    @apply text-lg md:text-xl text-muted-foreground leading-relaxed;
+  }
+
+  .vcl-label {
+    @apply text-sm font-medium text-foreground;
+  }
+}
