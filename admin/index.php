@@ -38,8 +38,23 @@ if (isset($_POST['action']) && $_POST['action'] === 'login') {
 // ── Handle logout ─────────────────────────────────────────────────────────────
 if (isset($_GET['logout'])) {
     session_destroy();
+    // Clear React token too
+    unset($config['admin_token'], $config['admin_token_expires']);
+    saveConfig($configPath, $config);
     header('Location: /admin/');
     exit;
+}
+
+// ── Issue / refresh React dashboard token when logged in ──────────────────────
+$reactToken = null;
+if ($isLoggedIn) {
+    $tokenExpires = (int)($config['admin_token_expires'] ?? 0);
+    if (empty($config['admin_token']) || time() > $tokenExpires) {
+        $config['admin_token']         = bin2hex(random_bytes(32));
+        $config['admin_token_expires'] = time() + 86400;
+        saveConfig($configPath, $config);
+    }
+    $reactToken = $config['admin_token'];
 }
 
 // ── Handle settings save ──────────────────────────────────────────────────────
@@ -626,6 +641,13 @@ $maskedSecret = $graphSecret ? '••••••••' . substr($graphSecret,
 <?php endif; ?>
 
 <script>
+// Sync PHP admin session → React dashboard localStorage token
+<?php if ($reactToken): ?>
+localStorage.setItem('vcl_admin_token', '<?= $reactToken ?>');
+<?php else: ?>
+localStorage.removeItem('vcl_admin_token');
+<?php endif; ?>
+
 function togglePass(id, btn) {
   var inp = document.getElementById(id);
   if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
