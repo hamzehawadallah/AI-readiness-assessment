@@ -3,8 +3,6 @@
  * Logo is now served from /uploads/ on Hostinger instead of Supabase Storage.
  */
 
-import { uploadApi } from "@/lib/apiClient";
-
 let logoBase64Cache: string | null = null;
 
 export async function getLogoBase64(): Promise<string> {
@@ -40,15 +38,7 @@ export function getLogoBase64Sync(): string | null {
  * Checks /uploads/email-logo.png first (custom), falls back to /uploads/vcl-logo.png (default).
  */
 export async function ensureLogoInStorage(): Promise<string> {
-  try {
-    const { exists, url } = await uploadApi.checkLogo();
-    if (exists && url) return url;
-
-    // No custom logo — return the static default logo URL
-    return window.location.origin + '/uploads/vcl-logo.png';
-  } catch {
-    return window.location.origin + '/uploads/vcl-logo.png';
-  }
+  return 'https://ai.vcl.solutions/assets/vcl-logo-BtsGNwH1.svg';
 }
 
 export async function preloadLogo(): Promise<void> {

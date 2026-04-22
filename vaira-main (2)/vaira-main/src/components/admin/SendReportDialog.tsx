@@ -61,7 +61,7 @@ function generateEmailHtml(submission: Submission, fullName: string): string {
   const WARNING_AMBER = "#f59e0b";
   const WARNING_LIGHT = "#fef3c7";
 
-  const vclLogoUrl = window.location.origin + '/uploads/email-logo.png';
+  const vclLogoUrl = 'https://ai.vcl.solutions/assets/vcl-logo-BtsGNwH1.svg';
 
   const dimensionInsights = parsedResult?.dimensionInsights || [];
   const dimensionRows = dimensionInsights
